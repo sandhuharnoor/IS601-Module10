@@ -16,7 +16,7 @@ def test_password_hashing(db_session, fake_user_data):
         last_name=fake_user_data['last_name'],
         email=fake_user_data['email'],
         username=fake_user_data['username'],
-        password=hashed
+        password_hash=hashed
     )
     
     assert user.verify_password(original_password) is True
@@ -194,3 +194,31 @@ def test_missing_password_registration(db_session):
     # Adjust the expected error message
     with pytest.raises(ValueError, match="Password must be at least 6 characters long"):
         User.register(db_session, test_data)
+
+        
+def test_user_read_excludes_password_hash():
+    """Ensure public user responses never expose password hashes."""
+    import uuid
+    from datetime import datetime
+    from app.schemas.user import UserRead
+
+    user = User(
+        id=uuid.uuid4(),
+        first_name="Test",
+        last_name="User",
+        email="test@example.com",
+        username="testuser",
+        password_hash=User.hash_password("TestPass123"),
+        is_active=True,
+        is_verified=False,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+    )
+
+    response = UserRead.model_validate(user)
+    data = response.model_dump(mode="json")
+
+    assert data["username"] == "testuser"
+    assert "password" not in data
+    assert "password_hash" not in data
+    assert user.password_hash not in response.model_dump_json()

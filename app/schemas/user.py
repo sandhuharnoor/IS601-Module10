@@ -17,6 +17,10 @@ class UserResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)  # Enable mapping from ORM objects
 
+class UserRead(UserResponse):
+    """Public user schema that excludes password hashes."""
+    pass
+
 
 class Token(BaseModel):
     """Schema for authentication token response"""
