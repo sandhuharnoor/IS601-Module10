@@ -42,9 +42,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run unit and integration tests
+      - name: Install Playwright browser
+        run: python -m playwright install --with-deps chromium
+
+      - name: Run all tests
         run: |
-          python -m pytest tests/unit tests/integration -q --tb=short --cov=app --cov-report=term-missing
+          python -m uvicorn main:app --host 127.0.0.1 --port 8000 > /tmp/uvicorn.log 2>&1 &
+          for i in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8000/health > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail http://127.0.0.1:8000/health || (cat /tmp/uvicorn.log && exit 1)
+          python -m pytest tests -q --tb=short --cov=app --cov-report=term-missing
 
   security:
     needs: test

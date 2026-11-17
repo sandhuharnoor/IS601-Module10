@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -10,7 +10,7 @@ RUN apt-get update && \
    apt-get upgrade -y && \
    apt-get install -y --no-install-recommends gcc python3-dev libssl-dev curl && \
    rm -rf /var/lib/apt/lists/* && \
-   python -m pip install --upgrade pip setuptools>=70.0.0 wheel && \
+   python -m pip install --upgrade pip "setuptools>=78.1.1" wheel && \
    groupadd -r appgroup && \
    useradd -r -g appgroup appuser
 
@@ -19,8 +19,17 @@ RUN python -m pip uninstall -y setuptools && \
     python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
     python -m pip install --no-cache-dir -r requirements.txt
 
+# Install Chromium and required Linux libraries for Playwright E2E tests
+RUN python -m playwright install --with-deps chromium && \
+    mkdir -p /home/appuser/.cache/ms-playwright && \
+    cp -a /root/.cache/ms-playwright/. /home/appuser/.cache/ms-playwright/ && \
+    chown -R appuser:appgroup /home/appuser/.cache
+
 COPY . .
-RUN chown -R appuser:appgroup /app
+
+# Remove build-time Python packaging tools from the runtime image
+RUN python -m pip uninstall -y pip setuptools wheel && \
+    chown -R appuser:appgroup /app
 
 USER appuser
 

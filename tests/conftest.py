@@ -210,35 +210,41 @@ def seed_users(db_session: Session, request) -> List[User]:
 @pytest.fixture(scope="session")
 def fastapi_server():
     """
-    Start and manage a FastAPI test server, if needed for integration tests.
+    Reuse an existing FastAPI server or start one if needed.
     """
-    server_url = 'http://127.0.0.1:8000/'
-    logger.info("Starting test server...")
+    server_url = "http://127.0.0.1:8000/"
+    process = None
+
+    if wait_for_server(server_url, timeout=2):
+        logger.info("Using existing FastAPI server.")
+        yield
+        return
+
+    logger.info("Starting FastAPI test server...")
 
     try:
         process = subprocess.Popen(
-            ['python', 'main.py'],
+            ["python", "main.py"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
+
         if not wait_for_server(server_url, timeout=30):
             raise ServerStartupError("Failed to start test server")
 
         logger.info("Test server started successfully.")
-        yield  # Run all tests that depend on this fixture
+        yield
 
-    except Exception as e:
-        logger.error(f"Server error: {str(e)}")
-        raise
     finally:
-        logger.info("Terminating test server...")
-        process.terminate()
-        try:
-            process.wait(timeout=5)
-            logger.info("Test server terminated gracefully.")
-        except subprocess.TimeoutExpired:
-            logger.warning("Test server did not terminate in time; killing it.")
-            process.kill()
+        if process is not None:
+            logger.info("Terminating test server...")
+            process.terminate()
+
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
 
 # ======================================================================================
 # Browser and Page Fixtures (Optional)
