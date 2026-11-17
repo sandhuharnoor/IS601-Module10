@@ -15,7 +15,8 @@ RUN apt-get update && \
    useradd -r -g appgroup appuser
 
 COPY requirements.txt .
-RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
+RUN python -m pip uninstall -y setuptools && \
+    python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
     python -m pip install --no-cache-dir -r requirements.txt
 
 COPY . .
