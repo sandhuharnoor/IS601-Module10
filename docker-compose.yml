@@ -29,7 +29,7 @@ services:
       POSTGRES_PASSWORD: postgres
       # If you'd like, set this to 'fastapi_db' for dev,
       # but we'll also manually create fastapi_test_db in conftest.py or via init script
-      POSTGRES_DB: fastapi_db
+      POSTGRES_DB: fastapi_test_db
     ports:
       - "5432:5432"
     volumes:
